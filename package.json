@@ -1,0 +1,46 @@
+{
+  "name": "databox-logstore",
+  "version": "1.0.0",
+  "description": "Datbox datastore for aggregating log data from datastores",
+  "config": {
+    "registry": "registry.iotdatabox.com"
+  },
+  "scripts": {
+    "test": "./node_modules/mocha/bin/mocha",
+    "start": "node ./src/main.js",
+    "build": "docker build -t databox/databox-logstore .",
+    "deploy": "docker tag databox/databox-logstore $npm_package_config_registry/databox-logstore && docker push $npm_package_config_registry/databox-logstore",
+    "build-arm": "docker build -f Dockerfile-arm -t databox/databox-logstore-arm .",
+    "deploy-arm": "docker tag databox/databox-logstore-arm $npm_package_config_registry/databox-logstore-arm && docker push $npm_package_config_registry/databox-logstore-arm",
+    "clean": "node ./node_modules/modclean/bin/modclean.js -p ./node_modules/ -r",
+    "getshell": "docker exec -i -t databox-logstore /bin/bash",
+    "kill": "docker kill databox-logstore",
+    "attach": "docker attach databox-logstore",
+    "shell": "docker run -i -t databox/databox-logstore /bin/bash",
+    "local": "docker run -i -t databox/databox-logstore"
+  },
+  "author": "Anthony Brown <Anthony.Brown@nottingham.ac.uk> ()",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Toshbrown/databox-logstore/issues"
+  },
+  "homepage": "https://github.com/Toshbrown/databox-logstore#readme",
+  "dependencies": {
+    "basic-auth": "^1.1.0",
+    "body-parser": "^1.15.2",
+    "bunyan": "^1.8.5",
+    "bunyan-middleware": "^0.5.1",
+    "express": "^4.14.0",
+    "macaroons.js": "^0.3.6",
+    "modclean": "",
+    "nedb": "^1.8.0",
+    "node-uuid": "^1.4.7",
+    "path-to-regexp": "^1.7.0",
+    "request": "^2.75.0"
+  },
+  "devDependencies": {
+    "assert": "^1.4.1",
+    "mocha": "^3.1.2",
+    "supertest": "^2.0.0"
+  }
+}

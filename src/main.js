@@ -15,11 +15,11 @@ const NO_SECURITY = !!process.env.NO_SECURITY;
 const PORT = process.env.PORT || 8080;
 
 //HTTPS certs created by the container mangers for this components HTTPS server.
-const HTTPS_CLIENT_CERT = process.env.HTTPS_CLIENT_CERT || '';
-const HTTPS_CLIENT_PRIVATE_KEY = process.env.HTTPS_CLIENT_PRIVATE_KEY || '';
+const HTTPS_SERVER_CERT = process.env.HTTPS_SERVER_CERT || '';
+const HTTPS_SERVER_PRIVATE_KEY = process.env.HTTPS_SERVER_PRIVATE_KEY || '';
 const credentials = {
-	key:  HTTPS_CLIENT_PRIVATE_KEY,
-	cert: HTTPS_CLIENT_CERT,
+	key:  HTTPS_SERVER_PRIVATE_KEY,
+	cert: HTTPS_SERVER_CERT,
 };
 
 const app = express();

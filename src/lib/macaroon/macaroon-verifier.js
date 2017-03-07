@@ -1,5 +1,5 @@
 var url = require('url');
-var databoxRequest = require('../databox-request/databox-request.js');
+var databoxRequest = require('../databox-request/databox-request-promise.js');
 var basicAuth = require('basic-auth');
 var macaroons = require('macaroons.js');
 var pathToRegexp = require('path-to-regexp');
@@ -11,7 +11,7 @@ const DATABOX_ARBITER_ENDPOINT = process.env.DATABOX_ARBITER_ENDPOINT || "https:
  * @return {Promise} A promise that resolves with a shared secret gotten from the arbiter
  */
 module.exports.getSecretFromArbiter = function(arbiterKey) {
-	return new Promise((resolve, reject) => {
+	 return new Promise((resolve, reject) => {
 		if (!arbiterKey) {
 			resolve('');
 			return;
@@ -31,31 +31,23 @@ module.exports.getSecretFromArbiter = function(arbiterKey) {
 
 
 /**
- * Checks if a method and path satisfies a macaroon "routes" caveat
+ * Checks if a path satisfies a macaroon "path" caveat
  * @param {String} caveat
- * @param {String} method
  * @param {String} path
  * @return {Boolean} valid
  */
 var isPathValid = function () {
-	var prefixRegex = /routes = .*/;
-	var prefixLen   = 'routes = '.length;
+	var prefixRegex = /path = .*/;
+	var prefixLen   = 'path = '.length;
 
-	return function (caveat, method, path) {
+	return function (caveat, path) {
 		if (!prefixRegex.test(caveat))
 			return false;
 
 		// TODO: Catch potential JSON.parse exception
-		var routes = JSON.parse(caveat.substring(prefixLen));
-		var whitelist = routes[method];
+		var allowed = caveat.substring(prefixLen);
 
-		if (!whitelist)
-			return false;
-
-		// TODO: Catch potential JSON.parse exception
-		whitelist = JSON.parse(whitelist);
-
-		return pathToRegexp(whitelist).test(path);
+		return pathToRegexp(allowed).test(path);
 	}
 }();
 
@@ -64,12 +56,65 @@ var isPathValid = function () {
  * @param {String} path
  * @return {Function} Path verifier
  */
-var createPathVerifier = function (method, path) {
+var createPathVerifier = function (path) {
 	return function (caveat) {
-		return isPathValid(caveat, method, path);
+		return isPathValid(caveat, path);
 	};
 };
 
+/**
+ * Creates a validator that checks if an integer matches a caveat with a given name and relation
+ * @param {String} name
+ * @param {String} relation
+ * @return {Function} Validator
+ */
+var createRelationValidator = function (name, relation) {
+	var prefixRegex = new RegExp(name + ' ' + relation + ' .*');
+	var prefixLen   = name.length + relation.length + 2;
+
+	/**
+	 * Checks if a timstamp satisfies a given macaroon caveat
+	 * @param {String} caveat
+	 * @param {String} value
+	 * @return {Boolean} valid
+	 */
+	return function (caveat, value) {
+		if (!prefixRegex.test(caveat))
+			return false;
+
+		// TODO: Catch potential JSON.parse exception
+		var bound = parseInt(caveat.substring(prefixLen));
+
+		switch(relation) {
+			case '>':
+				return value >  bound;
+			case '<':
+				return value <  bound;
+			case '>=':
+				return value >= bound;
+			case '<=':
+				return value <= bound;
+			default:
+				return false;
+		}
+	}
+};
+
+var isStartTimestampValid = createRelationValidator('startTimestamp', '>=');
+var isEndTimestampValid   = createRelationValidator('endTimestamp',   '<=');
+
+/**
+ * Returns a function that returns verifiers for a given caveat name and relation
+ * @param {String} validator
+ * @param {...*} validatorParams
+ * @return {Function} Relation verifier creator
+ */
+var createGeneralVerifier = function (validator) {
+	var params = Array.prototype.slice.call(arguments, 1);
+	return function (caveat) {
+		return validator.apply(this, params);
+	};
+};
 
 /**
  * Creates Macaroon verification middleware for express requests
@@ -103,9 +148,20 @@ module.exports.verifier = function (secret, storeName) {
 		// Verify "target" caveat
 		macaroon.satisfyExact("target = " + storeName);
 
-		macaroon.satisfyGeneral(createPathVerifier(req.method, req.path));
+		macaroon.satisfyExact("method = " + req.method);
 
-		// TODO: Verify granularity etc here (or potentially in tandem with driver)?
+		macaroon.satisfyGeneral(createPathVerifier(req.path));
+
+		// Special cases
+		if (req.body.startTimestamp)
+			macaroon.satisfyGeneral(createGeneralVerifier(isStartTimestampValid, req.body.startTimestamp));
+
+		if (req.body.endTimestamp)
+			macaroon.satisfyGeneral(createGeneralVerifier(isEndTimestampValid,   req.body.endTimestamp));
+
+		// TODO: Check `datasources` caveat here for /cat GETs
+
+		// TODO: Verify granularity etc here
 
 		if (!macaroon.isValid(secret)) {
 			res.status(401).send('Invalid API key/token');

@@ -1,10 +1,11 @@
 
 const request = require('request');
+const fs = require('fs');
 const httpsAgent = require('./databox-https-agent.js');
 
 
 const DATABOX_ARBITER_ENDPOINT = process.env.DATABOX_ARBITER_ENDPOINT || "https://databox-arbiter:8080";
-const ARBITER_TOKEN   = process.env.ARBITER_TOKEN;
+const ARBITER_TOKEN = fs.readFileSync("/run/secrets/DATABOX_LOGSTORE_KEY",{encoding:'base64'});
 
 var macaroonCache = {};
 

@@ -1,6 +1,7 @@
 const https = require('https');
 const express = require("express");
 const bodyParser = require("body-parser");
+const fs = require('fs');
 
 const macaroonVerifier = require('./lib/macaroon/macaroon-verifier.js');
 
@@ -9,23 +10,24 @@ const DATABOX_LOCAL_PORT = process.env.DATABOX_LOCAL_PORT || 8080;
 const DATABOX_ARBITER_ENDPOINT = process.env.DATABOX_ARBITER_ENDPOINT || "https://databox-arbiter:8080";
 
 // TODO: Refactor token to key here and in CM to avoid confusion with bearer tokens
-const ARBITER_KEY = process.env.ARBITER_TOKEN;
+//const ARBITER_KEY = process.env.ARBITER_TOKEN;
+const ARBITER_TOKEN = fs.readFileSync("/run/secrets/DATABOX_LOGSTORE_KEY",{encoding:'base64'});
+
 const NO_SECURITY = !!process.env.NO_SECURITY;
 
 const PORT = process.env.PORT || 8080;
 
 //HTTPS certs created by the container mangers for this components HTTPS server.
-const HTTPS_SERVER_CERT = process.env.HTTPS_SERVER_CERT || '';
-const HTTPS_SERVER_PRIVATE_KEY = process.env.HTTPS_SERVER_PRIVATE_KEY || '';
-const credentials = {
-	key:  HTTPS_SERVER_PRIVATE_KEY,
-	cert: HTTPS_SERVER_CERT,
+const HTTPS_SECRETS = JSON.parse(fs.readFileSync("/run/secrets/DATABOX_LOGSTORE_PEM.json") || {});
+var credentials = {
+	key:  HTTPS_SECRETS.clientprivate || '',
+	cert: HTTPS_SECRETS.clientcert || '',
 };
 
 const app = express();
 
 //Register with arbiter and get secret
-macaroonVerifier.getSecretFromArbiter(ARBITER_KEY)
+macaroonVerifier.getSecretFromArbiter(ARBITER_TOKEN)
 	.then((secret) => {
 		app.use(bodyParser.json());
 		app.use(bodyParser.urlencoded({extended: true}));

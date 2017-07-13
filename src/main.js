@@ -5,9 +5,9 @@ const fs = require('fs');
 
 const macaroonVerifier = require('./lib/macaroon/macaroon-verifier.js');
 
-const DATABOX_LOCAL_NAME = process.env.DATABOX_LOCAL_NAME || "databox-logstore";
+const DATABOX_LOCAL_NAME = process.env.DATABOX_LOCAL_NAME || "syslog";
 const DATABOX_LOCAL_PORT = process.env.DATABOX_LOCAL_PORT || 8080;
-const DATABOX_ARBITER_ENDPOINT = process.env.DATABOX_ARBITER_ENDPOINT || "https://databox-arbiter:8080";
+const DATABOX_ARBITER_ENDPOINT = process.env.DATABOX_ARBITER_ENDPOINT || "https://arbiter:8080";
 
 // TODO: Refactor token to key here and in CM to avoid confusion with bearer tokens
 //const ARBITER_KEY = process.env.ARBITER_TOKEN;

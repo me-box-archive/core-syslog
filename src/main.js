@@ -18,10 +18,9 @@ const NO_SECURITY = !!process.env.NO_SECURITY;
 const PORT = process.env.PORT || 8080;
 
 //HTTPS certs created by the container mangers for this components HTTPS server.
-const HTTPS_SECRETS = JSON.parse(fs.readFileSync("/run/secrets/DATABOX_LOGSTORE_PEM.json") || {});
 var credentials = {
-	key:  HTTPS_SECRETS.clientprivate || '',
-	cert: HTTPS_SECRETS.clientcert || '',
+	key:  fs.readFileSync("/run/secrets/DATABOX_LOGSTORE.pem"),
+	cert: fs.readFileSync("/run/secrets/DATABOX_LOGSTORE.pem"),
 };
 
 const app = express();
